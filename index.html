@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="referrer" content="strict-origin-when-cross-origin">
+<title>Sonora · reproductor</title>
+<style>
+  html, body { margin: 0; height: 100%; background: #000; overflow: hidden; }
+  #p { position: absolute; inset: 0; width: 100%; height: 100%; }
+  .info { color: #999; font: 15px system-ui, sans-serif; display: grid; place-items: center; height: 100%; text-align: center; padding: 16px; box-sizing: border-box; }
+</style>
+</head>
+<body>
+<div id="p"></div>
+<script>
+// Reproductor de YouTube para la app Sonora.
+// La app carga esta página dentro de su ventana y la controla con mensajes (postMessage).
+(function () {
+  'use strict';
+
+  // Solo la app Sonora (escritorio o móvil) puede controlar este reproductor.
+  var ALLOWED = [
+    /^http:\/\/127\.0\.0\.1(:\d+)?$/,
+    /^http:\/\/localhost(:\d+)?$/,
+    /^https:\/\/localhost$/,
+    /^capacitor:\/\/localhost$/
+  ];
+
+  if (window.parent === window) {
+    document.body.innerHTML = '<div class="info">Reproductor de Sonora.<br>Esta página solo funciona dentro de la app.</div>';
+    return;
+  }
+
+  var parentOrigin = null;
+  var player = null;
+  var ready = false;
+  var queued = [];
+
+  function send(msg) {
+    if (!parentOrigin) return;
+    msg.sonora = true;
+    window.parent.postMessage(msg, parentOrigin);
+  }
+
+  function run(cmd) {
+    if (!ready) { queued.push(cmd); return; }
+    switch (cmd.type) {
+      case 'load': player.loadVideoById({ videoId: cmd.videoId, startSeconds: cmd.start || 0 }); break;
+      case 'play': player.playVideo(); break;
+      case 'pause': player.pauseVideo(); break;
+      case 'stop': player.stopVideo(); break;
+      case 'seek': player.seekTo(Number(cmd.seconds) || 0, true); break;
+      case 'volume': player.setVolume(Math.max(0, Math.min(100, Number(cmd.value) || 0))); break;
+    }
+  }
+
+  window.addEventListener('message', function (e) {
+    if (e.source !== window.parent) return;
+    if (!ALLOWED.some(function (re) { return re.test(e.origin); })) return;
+    var d = e.data;
+    if (!d || d.sonora !== true || typeof d.type !== 'string') return;
+    if (!parentOrigin) parentOrigin = e.origin;
+    if (e.origin !== parentOrigin) return;
+    if (d.type === 'hello') { send({ type: 'hello-ack', ready: ready }); return; }
+    if (d.type === 'load' && !/^[\w-]{6,20}$/.test(String(d.videoId))) return;
+    run(d);
+  });
+
+  window.onYouTubeIframeAPIReady = function () {
+    player = new YT.Player('p', {
+      width: '100%',
+      height: '100%',
+      playerVars: { playsinline: 1, rel: 0, hl: 'es', origin: location.origin },
+      events: {
+        onReady: function () {
+          ready = true;
+          send({ type: 'ready' });
+          queued.splice(0).forEach(run);
+        },
+        onStateChange: function (e) {
+          send({ type: 'state', state: e.data, duration: player.getDuration() || 0 });
+        },
+        onError: function (e) {
+          send({ type: 'error', code: e.data });
+        }
+      }
+    });
+    setInterval(function () {
+      if (ready && parentOrigin) {
+        send({ type: 'time', current: player.getCurrentTime() || 0, duration: player.getDuration() || 0 });
+      }
+    }, 250);
+  };
+
+  var s = document.createElement('script');
+  s.src = 'https://www.youtube.com/iframe_api';
+  document.head.appendChild(s);
+})();
+</script>
+</body>
+</html>
