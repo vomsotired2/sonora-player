@@ -1,6 +1,6 @@
 # Descargador
 
-Pega un link de YouTube (o de muchas otras webs) y bájate el **vídeo en MP4 hasta 4K** o el **audio en MP3/M4A**. Sin anuncios, sin webs raras: todo se instala desde PyPI, el repositorio oficial de Python.
+Pega un link de **YouTube**, **TikTok** (o de muchas otras webs) y bájate el **vídeo en MP4 hasta 4K** o el **audio en MP3/M4A**. Sin anuncios, sin webs raras: todo se instala desde PyPI, el repositorio oficial de Python.
 
 ## Instalación (solo la primera vez)
 
@@ -13,11 +13,13 @@ Después, siempre se abre con ese mismo doble clic. Cada vez que lo abres se act
 
 ## Uso
 
-1. Copia el link del vídeo y pulsa **Pegar**.
+1. Copia el link del vídeo y pulsa **Pegar**. En TikTok: *Compartir → Copiar enlace*. Valen los links normales y los cortos (`vm.tiktok.com/…`).
 2. Elige **Vídeo MP4**, **Audio MP3** o **Audio M4A**.
 3. Si es vídeo, elige la calidad (por defecto 1080p).
 4. Pulsa **Descargar**. Se guarda en tu carpeta de Descargas, o en la que elijas con **Cambiar…**.
 
+- **Perfiles y playlists:** si pegas el link de un perfil de TikTok o de una playlist de YouTube, solo se descarga si marcas *«bajarla entera»*. Así no te bajas 300 vídeos sin querer.
+- **TikTok:** se descarga la versión sin marca de agua cuando TikTok la ofrece. Los posts de fotos (carrusel) no se pueden bajar como vídeo.
 - **MP3:** se oye en cualquier sitio.
 - **M4A:** es el audio tal cual viene de YouTube, sin recomprimir. Suena un poquito mejor y pesa menos.
 - **Vídeo:** a igual resolución se prefiere H.264, que abre cualquier reproductor. En 1440p y 4K YouTube solo da VP9/AV1. Si tu reproductor no los abre, usa VLC.

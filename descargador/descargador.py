@@ -66,6 +66,13 @@ def mensaje_de_error(err: Exception) -> str:
     if 'sign in to confirm' in bajo or 'not a bot' in bajo:
         return ('YouTube está pidiendo comprobar que no eres un robot. Espera un rato, '
                 'cierra y vuelve a abrir el descargador (así se actualiza) y prueba otra vez.')
+    if 'ip address is blocked' in bajo or 'not available in your' in bajo:
+        return 'Ese vídeo no está disponible en tu país.'
+    if 'account is private' in bajo:
+        return 'Esa cuenta es privada, no se pueden descargar sus vídeos.'
+    if 'unable to extract' in bajo or 'unable to find' in bajo:
+        return ('No pude leer ese vídeo; puede que la web haya cambiado algo. Cierra y vuelve a abrir '
+                'el descargador (así se actualiza) y prueba otra vez.')
     if 'unable to download' in bajo or 'getaddrinfo' in bajo or 'timed out' in bajo:
         return 'No pude conectarme. Revisa tu internet y vuelve a probar.'
     return texto
@@ -122,7 +129,7 @@ class App:
             row=3, column=2, pady=(12, 0))
 
         self.lista = tk.BooleanVar(value=False)
-        ttk.Checkbutton(marco, text='Si el link es una playlist, bajarla entera',
+        ttk.Checkbutton(marco, text='Si el link es una playlist o un perfil, bajarla entera',
                         variable=self.lista).grid(row=4, column=1, columnspan=2, sticky='w',
                                                   padx=(8, 0), pady=(10, 0))
 
@@ -138,7 +145,7 @@ class App:
 
         self.barra = ttk.Progressbar(marco, mode='determinate', maximum=100)
         self.barra.grid(row=6, column=0, columnspan=3, sticky='ew', pady=(14, 4))
-        self.estado = tk.StringVar(value='Pega un link y dale a Descargar.')
+        self.estado = tk.StringVar(value='Pega un link de YouTube, TikTok… y dale a Descargar.')
         ttk.Label(marco, textvariable=self.estado, wraplength=480).grid(
             row=7, column=0, columnspan=3, sticky='w')
 
@@ -194,6 +201,10 @@ class App:
             self.cola.put(('hecho', archivos))
         except nucleo.Cancelado:
             self.cola.put(('cancelado', None))
+        except nucleo.EsLista:
+            self.cola.put(('error', 'Ese link es una playlist o un perfil con varios vídeos. '
+                                    'Si los quieres todos, marca «bajarla entera» y dale otra vez. '
+                                    'Si solo quieres uno, abre ese vídeo y copia su link.'))
         except yt_dlp.utils.DownloadError as err:
             if isinstance(getattr(err, 'exc_info', [None, None])[1], nucleo.Cancelado):
                 self.cola.put(('cancelado', None))

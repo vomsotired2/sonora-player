@@ -1,6 +1,6 @@
 """Lógica de descarga (sin ventana) del Descargador.
 
-Usa yt-dlp para bajar el vídeo o el audio, el ffmpeg de imageio-ffmpeg para
+Usa yt-dlp para bajar el vídeo o el audio (YouTube, TikTok y muchas webs más), el ffmpeg de imageio-ffmpeg para
 juntar imagen y sonido o convertir a MP3, y deno para que yt-dlp pueda
 resolver los vídeos de YouTube. Todo se instala desde PyPI; no hay que
 bajar nada de webs raras.
@@ -33,6 +33,10 @@ CALIDADES = {
 
 class Cancelado(Exception):
     pass
+
+
+class EsLista(Exception):
+    """El link es una playlist o un perfil y no se marcó bajarla entera."""
 
 
 @dataclass
@@ -71,7 +75,9 @@ def construir_opciones(modo: str, altura: int | None, carpeta: str, lista: bool,
                        hook: Callable[[dict], None], pp_hook: Callable[[dict], None]) -> dict:
     opts: dict = {
         'paths': {'home': carpeta},
-        'outtmpl': '%(title)s.%(ext)s',
+        # Los títulos de TikTok son la descripción entera, con hashtags: se recortan
+        # para no pasarse del límite de longitud de rutas de Windows.
+        'outtmpl': '%(title).150B.%(ext)s',
         'windowsfilenames': True,
         'noplaylist': not lista,
         'progress_hooks': [hook],
@@ -137,6 +143,9 @@ def descargar(url: str, modo: str, altura: int | None, carpeta: str, lista: bool
             pct = (hecho / total * 100) if total else None
             vel = d.get('speed')
             texto = f'Descargando… {_bytes(hecho)} de {_bytes(total)}'
+            info = d.get('info_dict') or {}
+            if info.get('playlist_index') and info.get('n_entries'):
+                texto = f"Vídeo {info['playlist_index']} de {info['n_entries']}  ·  " + texto
             if vel:
                 texto += f'  ·  {_bytes(vel)}/s'
             al_progresar(Progreso(pct, texto))
@@ -159,7 +168,12 @@ def descargar(url: str, modo: str, altura: int | None, carpeta: str, lista: bool
     opts['post_hooks'] = [terminados.append]  # recibe la ruta final de cada archivo
     try:
         with yt_dlp.YoutubeDL(opts) as ydl:
-            ydl.download([url])
+            # Primero se mira qué es el link (sin descargar) y luego se descarga
+            # aprovechando esa misma consulta, sin repetirla.
+            info = ydl.extract_info(url, download=False, process=False)
+            if not lista and info and info.get('_type') in ('playlist', 'multi_video'):
+                raise EsLista()
+            ydl.process_ie_result(info, download=True)
     except Exception as err:
         causa = getattr(err, 'exc_info', None)
         if isinstance(err, Cancelado) or (causa and isinstance(causa[1], Cancelado)):
