@@ -1,0 +1,75 @@
+name: APK del Descargador
+
+on:
+  push:
+    branches: [ccr-b14ee323-dmjati]
+    paths:
+      - 'movil/**'
+      - '.github/workflows/apk-descargador.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: apk-descargador
+  cancel-in-progress: true
+
+jobs:
+  compilar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      # Chaquopy necesita la misma versión de Python en la máquina que compila.
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      # QuickJS: el motor de JavaScript que necesita yt-dlp para YouTube.
+      # Se compila para el móvil y se mete en la APK como libqjs.so.
+      - name: Compilar QuickJS para Android
+        run: |
+          git clone --depth 1 --branch v0.17.0 https://github.com/quickjs-ng/quickjs.git qjs-src
+          NDK="$ANDROID_NDK_LATEST_HOME"
+          for abi in arm64-v8a armeabi-v7a; do
+            cmake -S qjs-src -B "qjs-$abi" \
+              -DCMAKE_TOOLCHAIN_FILE="$NDK/build/cmake/android.toolchain.cmake" \
+              -DANDROID_ABI="$abi" -DANDROID_PLATFORM=android-29 \
+              -DCMAKE_BUILD_TYPE=Release
+            cmake --build "qjs-$abi" --target qjs_exe -j"$(nproc)"
+            mkdir -p "movil/app/src/main/jniLibs/$abi"
+            "$NDK/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-strip" \
+              -o "movil/app/src/main/jniLibs/$abi/libqjs.so" "qjs-$abi/qjs"
+          done
+          ls -la movil/app/src/main/jniLibs/*
+
+      - name: Compilar APK
+        working-directory: movil
+        run: |
+          chmod +x gradlew
+          ./gradlew --no-daemon --stacktrace assembleRelease
+          cp app/build/outputs/apk/release/app-release.apk ../Descargador.apk
+          ls -la ../Descargador.apk
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Descargador-apk
+          path: Descargador.apk
+
+      # Publica siempre en la misma dirección, para que el link de descarga no cambie.
+      - name: Publicar
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release delete descargador-movil --yes --cleanup-tag || true
+          gh release create descargador-movil Descargador.apk \
+            --target "$GITHUB_SHA" --prerelease \
+            --title "Descargador para Android (versión 1.0.${GITHUB_RUN_NUMBER})" \
+            --notes "Descarga **Descargador.apk** desde el móvil e instálala. Si el móvil pregunta, permite instalar apps de esta fuente. Para actualizar, instala la nueva encima: no hace falta desinstalar."

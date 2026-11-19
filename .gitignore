@@ -1,2 +1,9 @@
 __pycache__/
 *.pyc
+
+# Android
+movil/.gradle/
+movil/build/
+movil/app/build/
+movil/local.properties
+movil/app/src/main/jniLibs/

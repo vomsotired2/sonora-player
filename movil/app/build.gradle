@@ -1,0 +1,70 @@
+plugins {
+    id 'com.android.application'
+    id 'com.chaquo.python'
+}
+
+// En GitHub cada compilación tiene un número que sube solo, así el móvil
+// acepta la APK nueva como actualización de la anterior.
+def numero = (System.getenv('GITHUB_RUN_NUMBER') ?: '1') as int
+
+android {
+    namespace 'io.vomie.descargador'
+    compileSdk 35
+
+    defaultConfig {
+        applicationId 'io.vomie.descargador'
+        minSdk 29          // Android 10 o más nuevo
+        targetSdk 34
+        versionCode numero
+        versionName "1.0.${numero}"
+        ndk {
+            abiFilters 'arm64-v8a', 'armeabi-v7a'
+        }
+    }
+
+    // Clave fija (y pública: está en el repo) para que todas las versiones
+    // tengan la misma firma y se puedan instalar unas encima de otras.
+    signingConfigs {
+        fija {
+            storeFile file('descargador.keystore')
+            storePassword 'descargador'
+            keyAlias 'descargador'
+            keyPassword 'descargador'
+        }
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            signingConfig signingConfigs.fija
+        }
+        debug {
+            signingConfig signingConfigs.fija
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+
+    // libqjs.so es el programa QuickJS (no una librería). Tiene que quedar
+    // descomprimido en el móvil para poder ejecutarlo.
+    packaging {
+        jniLibs {
+            useLegacyPackaging true
+        }
+    }
+}
+
+chaquopy {
+    defaultConfig {
+        version = '3.13'
+        pip {
+            install 'yt-dlp==2026.10.26'
+            install 'yt-dlp-ejs==0.8.0'
+            install 'certifi'
+        }
+        extractPackages 'yt_dlp_ejs'
+    }
+}

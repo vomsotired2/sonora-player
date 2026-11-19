@@ -1,1 +1,4 @@
 *.bat -text
+movil/gradlew text eol=lf
+*.jar binary
+*.keystore binary

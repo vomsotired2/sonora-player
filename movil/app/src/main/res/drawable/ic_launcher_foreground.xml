@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Flecha hacia abajo sobre una bandeja: "descargar". Lienzo de 108 con zona segura de 66. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M50,32h8v24h9l-13,14l-13,-14h9z" />
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M34,66h6v6h28v-6h6v12h-40z" />
+</vector>
