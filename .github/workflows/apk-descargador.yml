@@ -30,7 +30,7 @@ jobs:
       # Chaquopy necesita la misma versión de Python en la máquina que compila.
       - uses: actions/setup-python@v5
         with:
-          python-version: '3.13'
+          python-version: '3.12'
 
       # QuickJS: el motor de JavaScript que necesita yt-dlp para YouTube.
       # Se compila para el móvil y se mete en la APK como libqjs.so.
@@ -54,7 +54,7 @@ jobs:
         working-directory: movil
         run: |
           chmod +x gradlew
-          ./gradlew --no-daemon --stacktrace assembleRelease
+          ./gradlew --no-daemon assembleRelease
           cp app/build/outputs/apk/release/app-release.apk ../Descargador.apk
           ls -la ../Descargador.apk
 
