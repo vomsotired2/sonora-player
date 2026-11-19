@@ -8,7 +8,7 @@ App para bajar vídeos de **YouTube** y **TikTok** al móvil, en MP4 hasta 1080p
 2. Ábrela. Si Android pregunta, permite instalar apps de esa fuente (Chrome o Archivos).
 3. Para actualizar, instala la APK nueva encima. No hace falta desinstalar.
 
-Necesita **Android 10** o más nuevo.
+Necesita **Android 10** o más nuevo y un móvil de 64 bits (casi todos desde 2017).
 
 ## Usar
 
